@@ -37,18 +37,27 @@ const InterviewClient: React.FC<InterviewClientProps> = ({ accessToken }) => {
 
   const connectWebSocket = () => {
     try {
-      const ws = new WebSocket(`${process.env.REACT_APP_INTERVIEW_SERVICE_HOST}/interview_service`);
+      // Create a custom WebSocket class that includes headers
+      class CustomWebSocket extends WebSocket {
+        constructor(url: string, protocols?: string | string[]) {
+          const customHeaders = {
+            'Authorization': `Bearer ${accessToken}`
+          };
+          // Add headers to the WebSocket connection
+          const enhancedUrl = new URL(url);
+          Object.entries(customHeaders).forEach(([key, value]) => {
+            enhancedUrl.searchParams.append(key, value);
+          });
+          super(enhancedUrl.toString(), protocols);
+        }
+      }
+
+      const ws = new CustomWebSocket(
+        `${process.env.REACT_APP_INTERVIEW_SERVICE_HOST}/interview_service`
+      );
       ws.binaryType = "arraybuffer";
       
       ws.onopen = () => {
-        if (accessToken) {
-          ws.send(JSON.stringify({
-            action: 'authenticate',
-            payload: {
-              token: accessToken
-            }
-          }));
-        }
         setStatus('Connected');
       };
 
